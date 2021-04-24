@@ -1,68 +1,64 @@
 package com.ualr.recyclerviewassignment;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import android.content.Context;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import androidx.appcompat.widget.Toolbar;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.ualr.recyclerviewassignment.Utils.DataGenerator;
-import com.ualr.recyclerviewassignment.adapter.AdapterList;
-import com.ualr.recyclerviewassignment.databinding.ActivityListMultiSelectionBinding;
+
+import com.ualr.recyclerviewassignment.adapter.AdapterListBasic;
+
+import com.ualr.recyclerviewassignment.databinding.ActivityMainBinding;
 import com.ualr.recyclerviewassignment.model.Inbox;
 
 import java.util.List;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-
-// TODO 06. Detect click events on the list items. Implement a new method to toggle items' selection in response to click events
-// TODO 07. Detect click events on the thumbnail located on the left of every list row when the corresponding item is selected. Implement a new method to delete the corresponding item in the list
-// TODO 08. Create a new method to add a new item on the top of the list. Use the DataGenerator class to create the new item to be added.
-
-public class MainActivity extends AppCompatActivity implements AdapterList.OnItemClickListener{
+public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String INBOX_LIST_FRAGMENT_TAG = "InboxListFragment" ;
+
+
     private FloatingActionButton mFAB;
 
-    private ActivityListMultiSelectionBinding mBinding;
+    private AdapterListBasic mAdapter;
+    private InboxListFragment mFragment;
+    private AdapterListBasic.OnItemClickListener mOnItemClickListener;
+    private ActivityMainBinding mBinding;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mBinding = ActivityListMultiSelectionBinding.inflate(getLayoutInflater());
+
+
+        mBinding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(mBinding.getRoot());
-        initRecyclerView();
-    }
-    // TODO 01. Generate the item list to be displayed using the DataGenerator class
-    // TODO 03. Do the setup of a new RecyclerView instance to display the item list properly
-    // TODO 04. Define the layout of each item in the list
 
-    private void initRecyclerView() {
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-
-
-        List<Inbox> items = DataGenerator.getInboxData(this);
-        items.addAll( DataGenerator.getInboxData(this));
-        items.addAll( DataGenerator.getInboxData(this));
-
-
-
-        RecyclerView InBoxListView = mBinding.recyclerView;
-
-
-
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        InBoxListView.setLayoutManager(layoutManager);
-
-        // TODO 09. Create a new instance of the created Adapter class and bind it to the RecyclerView instance created in step 03
-        // TODO 10. Invoke the method created to a new item to the top of the list so it's triggered when the user taps the Floating Action Button
-        final AdapterList adapter = new AdapterList(items);
-
-        adapter.setOnItemClickListener(this);
-        InBoxListView.setAdapter(adapter);
-
+        mFragment = new InboxListFragment();
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft.replace(R.id.frame, mFragment,INBOX_LIST_FRAGMENT_TAG);
+        ft.commit();
 
 
         mFAB = findViewById(R.id.fab);
@@ -70,16 +66,43 @@ public class MainActivity extends AppCompatActivity implements AdapterList.OnIte
             @Override
             public void onClick(View view) {
 
-                adapter.addItem(0,DataGenerator.getRandomInboxItem(view.getContext()));
-                mBinding.recyclerView.scrollToPosition(0);
+                mFragment.addInboxItem();
+
             }
         });
+
+    }
+
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.toolbar_menu, menu);
+        return true;
     }
 
     @Override
-    public void onItemClick(View view, Inbox obj, int position) {
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.delete_action:
+                mFragment.removeInboxItem();
+                displaySnackBar();
+                return true;
+            case R.id.forward_action:
+                mFragment.forwardEmail();
+                return true;
+            default:
+                return true;
+        }
 
-
-        Log.d(TAG, String.format("The user %s has tapped on the iem %d", obj.getFrom(), position));
     }
+    public void displaySnackBar(){
+        CoordinatorLayout parentView = findViewById(R.id.lyt_parent);
+        String message = getResources().getString(R.string.message_email_deleted);
+        int message_duration = Snackbar.LENGTH_LONG;
+        Snackbar snackbar = Snackbar.make(parentView, message, message_duration);
+        snackbar.show();
+    }
+
+
 }
